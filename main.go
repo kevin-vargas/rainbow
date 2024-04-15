@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"rainbow/joy"
 	"rainbow/wiz"
 
@@ -15,7 +14,6 @@ var args struct {
 
 func main() {
 	arg.MustParse(&args)
-	fmt.Println(args.Address)
 	messages := make(chan []wiz.Option)
 	m := wiz.New(args.Address, args.MacAddress, messages)
 	j := joy.New(messages)

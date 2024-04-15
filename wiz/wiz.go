@@ -16,6 +16,7 @@ type Params struct {
 	ID       string        `json:"id,omitempty"`
 	Duration time.Duration `json:"-"`
 	Dimming  uint          `json:"dimming,omitempty"`
+	SceneID  uint          `json:"sceneId,omitempty"`
 	Delta    int           `json:"delta,omitempty"`
 	State    *bool         `json:"state,omitempty"`
 }
@@ -77,6 +78,15 @@ func WithDimming(i uint) Option {
 	}
 }
 
+func WithSceneID(id uint) Option {
+	return func(m *Message) {
+		if m.Params == nil {
+			m.Params = &Params{}
+		}
+		m.Params.SceneID = id
+	}
+}
+
 func WithDuration(t time.Duration) Option {
 	return func(m *Message) {
 		m.Params.Duration = t
@@ -94,6 +104,7 @@ func WithState(s bool) Option {
 
 func (d *Device) Set(ops ...Option) error {
 	msg := Message{
+		Env:    "pro",
 		Method: "setPilot",
 	}
 	for _, o := range ops {
