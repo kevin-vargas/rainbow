@@ -8,15 +8,16 @@ import (
 )
 
 var args struct {
-	Address    string `arg:"required"`
-	MacAddress string `arg:"required"`
+	Playlist     []string `arg:"required"`
+	SpotyAddress string   `arg:"required"`
+	Address      string   `arg:"required"`
 }
 
 func main() {
 	arg.MustParse(&args)
 	messages := make(chan []wiz.Option)
-	m := wiz.New(args.Address, args.MacAddress, messages)
-	j := joy.New(messages)
+	m := wiz.New(args.Address, "", messages)
+	j := joy.New(messages, args.SpotyAddress, args.Playlist)
 	go m.Start()
 	j.Start()
 }

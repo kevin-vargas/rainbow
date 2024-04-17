@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/go-resty/resty/v2"
 	"gobot.io/x/gobot"
 	"gobot.io/x/gobot/platforms/joystick"
 )
@@ -108,7 +109,9 @@ func Off() []wiz.Option {
 	}
 }
 
-func New(messages chan<- []wiz.Option) starter.Starter {
+func New(messages chan<- []wiz.Option, baseAddress string, playlist []string) starter.Starter {
+	restClient := resty.New().SetBaseURL(baseAddress).R()
+
 	joystickAdaptor := joystick.NewAdaptor()
 	stick := joystick.NewDriver(joystickAdaptor, "dualshock3")
 	dimManager := &dim{
@@ -158,41 +161,61 @@ func New(messages chan<- []wiz.Option) starter.Starter {
 		})
 
 		stick.On(joystick.CircleRelease, colorManager.resetLast)
-
-		// pulse
-
-		// buttons
+		playFormat := "/playlist/%s"
+		// buttons top
 		stick.On(joystick.SquarePress, func(data interface{}) {
-			messages <- Off()
-
+			restClient.Get(fmt.Sprintf(playFormat, playlist[0]))
 			fmt.Println("square_press")
-
-		})
-		stick.On(joystick.SquareRelease, func(data interface{}) {
-			fmt.Println("square_release")
 		})
 		stick.On(joystick.XPress, func(data interface{}) {
-			messages <- Off()
+			restClient.Get(fmt.Sprintf(playFormat, playlist[1]))
 			fmt.Println("x_press")
+		})
+		stick.On(joystick.R2Press, func(data interface{}) {
+			restClient.Get(fmt.Sprintf(playFormat, playlist[2]))
+			fmt.Println("R2Press", data)
+		})
+		stick.On(joystick.L2Press, func(data interface{}) {
+			restClient.Get(fmt.Sprintf(playFormat, playlist[3]))
+			fmt.Println("L2Press", data)
+		})
+
+		stick.On(joystick.StartPress, func(data interface{}) {
+			_, err := restClient.Get("play")
+			if err != nil {
+				fmt.Println(err.Error())
+			}
+			fmt.Println("start_press")
+		})
+		stick.On(joystick.SelectPress, func(data interface{}) {
+			messages <- Off()
+			fmt.Println("select_press")
+		})
+
+		stick.On(joystick.SquareRelease, func(data interface{}) {
+			fmt.Println("square_release")
 		})
 		stick.On(joystick.XRelease, func(data interface{}) {
 			fmt.Println("x_release")
 		})
-		stick.On(joystick.StartPress, func(data interface{}) {
-			fmt.Println("start_press")
-		})
+
 		stick.On(joystick.StartRelease, func(data interface{}) {
 			fmt.Println("start_release")
-		})
-		stick.On(joystick.SelectPress, func(data interface{}) {
-			fmt.Println("select_press")
 		})
 		stick.On(joystick.SelectRelease, func(data interface{}) {
 			fmt.Println("select_release")
 		})
-
 		// joysticks
 		stick.On(joystick.LeftX, func(data interface{}) {
+			if value, ok := data.(int16); ok {
+				fmt.Println(value)
+				if value == 0 {
+				} else if value > 0 {
+					restClient.Get("/next")
+				} else if value < 0 {
+					restClient.Get("/previous")
+				}
+			}
 			fmt.Println("left_x", data)
 		})
 		stick.On(joystick.LeftY, func(data interface{}) {
@@ -206,7 +229,6 @@ func New(messages chan<- []wiz.Option) starter.Starter {
 				} else if value < 0 {
 					go dimManager.up()
 				}
-
 			}
 		})
 		stick.On(joystick.RightX, func(data interface{}) {
@@ -226,18 +248,11 @@ func New(messages chan<- []wiz.Option) starter.Starter {
 		stick.On(joystick.R1Release, func(data interface{}) {
 			fmt.Println("R1Release", data)
 		})
-		stick.On(joystick.R2Press, func(data interface{}) {
-			messages <- Off()
 
-			fmt.Println("R2Press", data)
-		})
 		stick.On(joystick.R2Release, func(data interface{}) {
 			fmt.Println("R2Release", data)
 		})
-		stick.On(joystick.L2Press, func(data interface{}) {
-			messages <- Off()
-			fmt.Println("L2Press", data)
-		})
+
 		stick.On(joystick.L2Release, func(data interface{}) {
 			fmt.Println("L2Release", data)
 		})
